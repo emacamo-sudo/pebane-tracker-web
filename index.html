@@ -66,6 +66,11 @@
   .brand .tt{font-size:14px;font-weight:700}
   .foot{margin-top:28px;padding-top:12px;border-top:1px solid var(--line);font-size:11px;color:var(--muted);text-align:center;line-height:1.6}
   .foot b.mz{color:var(--orange)}.foot b.ya{color:var(--navy)}
+  .rolechip{font-size:11px;text-transform:capitalize;border:1px solid var(--line);border-radius:999px;padding:3px 9px;background:#fff;color:var(--muted)}
+  .ro td select,.ro td input,.ro td textarea{pointer-events:none;background:transparent;border-color:transparent!important;-webkit-appearance:none;appearance:none;color:var(--ink);padding-left:0}
+  .ro #addbtn,.ro [data-del],.ro [data-restore]{display:none!important}
+  .help h3{color:var(--orange);font-size:14px;margin:16px 0 6px}.help p,.help li{font-size:13px;color:#374151;line-height:1.6}.help ul{margin:4px 0 0 18px}
+  @media(max-width:600px){nav{gap:8px}.wrap{padding:12px 14px}nav .links{gap:10px;font-size:13px;flex-wrap:wrap}.brand .tt{font-size:12px}.logo{width:26px;height:26px}.right{flex-wrap:wrap;gap:6px;justify-content:flex-end}}
 </style>
 </head>
 <body>
@@ -90,7 +95,8 @@ const T = {
     navMatrix:'Matriz',navMeeting:'Reunião',navPerson:'Por responsável',navWeekly:'Semanal',navGov:'Governança',
     mtxTitle:'Matriz (Componente × Gate)',meetTitle:'Reunião de projecto',persTitle:'Seguimento por responsável',wkTitle:'Relatório semanal',
     govTitle:'Governança e Responsabilidades',govParties:'Partes',govBodies:'Órgãos',govWs:'Workstreams (WS1–WS6)',govExt:'Interfaces externas',govFuture:'SPVs (futuro)',
-    lead:'Lead',colead:'Co-lead',joint:'Conjuntas',dueWeek:'A vencer / em atraso',recent:'Actualizados (7 dias)',openItems:'em aberto',none:'—',yes:'Sim',no:'Não',lang:'EN'},
+    lead:'Lead',colead:'Co-lead',joint:'Conjuntas',dueWeek:'A vencer / em atraso',recent:'Actualizados (7 dias)',openItems:'em aberto',none:'—',yes:'Sim',no:'Não',
+    navHelp:'Ajuda',navAdmin:'Utilizadores',helpTitle:'Começar aqui — Ajuda',adminTitle:'Utilizadores e papéis',role:'Papel',expCsv:'CSV',backup:'Backup',readonly:'Só leitura',lang:'EN'},
   en:{title:'Pebane Phase 1 Action Tracker',dashboard:'Dashboard',components:'Components',actions:'Actions',
     signin:'Sign in',email:'Email address',send:'Send magic link',check:'Check your email — we sent a sign-in link.',
     signout:'Sign out',total:'Total actions',open:'Open',overdue:'Overdue',due:'Due (7 days)',red:'Red components',
@@ -101,7 +107,8 @@ const T = {
     navMatrix:'Matrix',navMeeting:'Meeting',navPerson:'By person',navWeekly:'Weekly',navGov:'Governance',
     mtxTitle:'Matrix (Component × Gate)',meetTitle:'Project meeting',persTitle:'Person follow-up',wkTitle:'Weekly report',
     govTitle:'Governance & Responsibilities',govParties:'Parties',govBodies:'Bodies',govWs:'Workstreams (WS1–WS6)',govExt:'External interfaces',govFuture:'SPVs (future)',
-    lead:'Lead',colead:'Co-lead',joint:'Joint',dueWeek:'Due / overdue',recent:'Updated (7 days)',openItems:'open',none:'—',yes:'Yes',no:'No',lang:'PT'}
+    lead:'Lead',colead:'Co-lead',joint:'Joint',dueWeek:'Due / overdue',recent:'Updated (7 days)',openItems:'open',none:'—',yes:'Yes',no:'No',
+    navHelp:'Help',navAdmin:'Users',helpTitle:'Start here — Help',adminTitle:'Users & roles',role:'Role',expCsv:'CSV',backup:'Backup',readonly:'Read-only',lang:'PT'}
 };
 let lang = localStorage.getItem('lang')==='en'?'en':'pt';
 const t = k => T[lang][k];
@@ -111,12 +118,16 @@ const fmt = d => { if(!d) return ''; const [y,m,dd]=d.split('-'); return `${+dd}
 const esc = s => (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const flagClass = f => f==='Overdue'?'Overdue':f==='Due 7 days'?'Due':'On';
 const ragClass = r => ({Red:'Red',Amber:'Amber',Green:'Green','On Hold':'OnHold',Complete:'Complete'}[r]||'On');
-let lists={}, people=[], view='dashboard';
+let lists={}, people=[], view='dashboard', myRole='viewer', canEdit=false;
 
 async function loadLists(){
   const {data}=await sb.from('lists').select('category,value,position').order('position');
   lists={}; (data||[]).forEach(r=>{(lists[r.category]=lists[r.category]||[]).push(r.value)});
 }
+function toCSV(rows){ if(!rows||!rows.length) return ''; const keys=Object.keys(rows[0]); const q=v=>`"${String(v==null?'':v).replace(/"/g,'""')}"`; return [keys.join(','),...rows.map(r=>keys.map(k=>q(r[k])).join(','))].join('\r\n'); }
+function dl(name,text,type){ const b=new Blob([text],{type}); const u=URL.createObjectURL(b); const a=document.createElement('a'); a.href=u; a.download=name; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(u); }
+async function exportActionsCSV(){ const {data}=await sb.from('v_actions').select('*').order('action_id'); dl('pebane_accoes_'+new Date().toISOString().slice(0,10)+'.csv', toCSV(data||[]), 'text/csv;charset=utf-8'); }
+async function backup(){ const tabs=['components','actions','lists','people','organisations','bodies','governance_workstreams','external_interfaces','spvs_future']; const out={app:'Pebane Phase 1 Action Tracker',exported_at:new Date().toISOString(),data:{}}; for(const tb of tabs){ const {data}=await sb.from(tb).select('*'); out.data[tb]=data||[]; } dl('pebane_backup_'+new Date().toISOString().slice(0,10)+'.json', JSON.stringify(out,null,2), 'application/json'); }
 function opt(cat,val){return (lists[cat]||[]).map(v=>`<option${v===val?' selected':''}>${esc(v)}</option>`).join('')}
 
 function shell(inner){
@@ -132,7 +143,12 @@ function shell(inner){
         <a data-nav="person" class="${view==='person'?'active':''}">${t('navPerson')}</a>
         <a data-nav="weekly" class="${view==='weekly'?'active':''}">${t('navWeekly')}</a>
         <a data-nav="governance" class="${view==='governance'?'active':''}">${t('navGov')}</a>
+        <a data-nav="help" class="${view==='help'?'active':''}">${t('navHelp')}</a>
+        ${myRole==='admin'?`<a data-nav="admin" class="${view==='admin'?'active':''}">${t('navAdmin')}</a>`:''}
       </div>
+      <span class="rolechip" title="${t('role')}">${myRole}${canEdit?'':' · '+t('readonly')}</span>
+      <button class="chip" id="expcsv">⤓ ${t('expCsv')}</button>
+      <button class="chip" id="backup">${t('backup')}</button>
       <button class="chip" id="lang">${t('lang')}</button>
       <button class="btn ghost" id="signout">${t('signout')}</button>
     </div></nav>${inner}<div class="foot"><b class="mz">MOZSA, Limitada</b> (50%) · <b class="ya">YASA Mozambique, Lda</b> (50%)<br>Pebane Integrated Port City, Energy &amp; Industrial Corridor</div>`;
@@ -141,6 +157,9 @@ function wireShell(){
   document.querySelectorAll('[data-nav]').forEach(a=>a.onclick=()=>{view=a.dataset.nav;render()});
   document.getElementById('lang').onclick=()=>{lang=lang==='pt'?'en':'pt';localStorage.setItem('lang',lang);render()};
   document.getElementById('signout').onclick=async()=>{await sb.auth.signOut();render()};
+  const ec=document.getElementById('expcsv'); if(ec) ec.onclick=exportActionsCSV;
+  const bk=document.getElementById('backup'); if(bk) bk.onclick=backup;
+  app.classList.toggle('ro', !canEdit);
 }
 
 async function dashboard(){
@@ -321,10 +340,56 @@ async function governanceView(){
    </div>`); wireShell();
 }
 
+function helpView(){
+  const pt = lang==='pt';
+  const body = pt ? `
+   <div class="b"><h3>O que é</h3><p>Rastreador de acções da Fase 1 do Pebane (parceria MOZSA · YASA). Fonte única de verdade, com guarda automática e auditoria. Nada se perde.</p></div>
+   <div class="b"><h3>Ecrãs</h3><ul>
+     <li><b>Painel</b> — totais e RAG por componente.</li>
+     <li><b>Componentes / Acções</b> — edição em linha (guarda automática).</li>
+     <li><b>Matriz</b> — Componente × Gate.</li>
+     <li><b>Reunião / Por responsável / Semanal</b> — vistas de gestão.</li>
+     <li><b>Governança</b> — Partes, JSC, PMO, workstreams, SPVs futuros.</li></ul></div>
+   <div class="b"><h3>Sinais e RAG</h3><ul>
+     <li><span class="tag Overdue">Em atraso</span> prazo ultrapassado · <span class="tag Due">A vencer</span> ≤7 dias · <span class="tag On">No prazo</span></li>
+     <li>RAG do componente: <span class="tag Red">Vermelho</span> At Risk ou ≥2 em atraso · <span class="tag Amber">Âmbar</span> 1 em atraso ou Waiting · <span class="tag Green">Verde</span></li>
+     <li><b>Gate (G1–G6)</b> = fase no plano. <b>Workstream (WS1–WS6)</b> = responsabilidade de governança. São campos independentes.</li></ul></div>
+   <div class="b"><h3>Papéis</h3><p><b>admin</b> edita tudo e gere utilizadores · <b>editor</b> edita dados · <b>viewer</b> só vê. O seu papel actual aparece no topo.</p></div>
+   <div class="b"><h3>Exportar / Backup</h3><p><b>⤓ CSV</b> descarrega as acções. <b>Backup</b> descarrega um JSON completo de todas as tabelas.</p></div>
+  ` : `
+   <div class="b"><h3>What it is</h3><p>Pebane Phase 1 action tracker (MOZSA · YASA partnership). Single source of truth, autosave and audit. Nothing is lost.</p></div>
+   <div class="b"><h3>Screens</h3><ul>
+     <li><b>Dashboard</b> — totals and per-component RAG.</li>
+     <li><b>Components / Actions</b> — inline editing (autosave).</li>
+     <li><b>Matrix</b> — Component × Gate.</li>
+     <li><b>Meeting / By person / Weekly</b> — management views.</li>
+     <li><b>Governance</b> — Parties, JSC, PMO, workstreams, future SPVs.</li></ul></div>
+   <div class="b"><h3>Flags and RAG</h3><ul>
+     <li><span class="tag Overdue">Overdue</span> past due · <span class="tag Due">Due</span> ≤7 days · <span class="tag On">On track</span></li>
+     <li>Component RAG: <span class="tag Red">Red</span> At Risk or ≥2 overdue · <span class="tag Amber">Amber</span> 1 overdue or Waiting · <span class="tag Green">Green</span></li>
+     <li><b>Gate (G1–G6)</b> = plan phase. <b>Workstream (WS1–WS6)</b> = governance responsibility. Independent fields.</li></ul></div>
+   <div class="b"><h3>Roles</h3><p><b>admin</b> edits all and manages users · <b>editor</b> edits data · <b>viewer</b> read-only. Your current role shows at the top.</p></div>
+   <div class="b"><h3>Export / Backup</h3><p><b>⤓ CSV</b> downloads the actions. <b>Backup</b> downloads a full JSON of all tables.</p></div>`;
+  app.innerHTML=shell(`<h1>${t('helpTitle')}</h1><div class="gov help">${body}</div>`); wireShell();
+}
+async function adminView(){
+  const {data}=await sb.from('profiles').select('id,email,role').order('email');
+  const rows=data||[];
+  app.innerHTML=shell(`<h1>${t('adminTitle')}</h1>
+   <div class="card"><table><thead><tr><th>Email</th><th>${t('role')}</th></tr></thead>
+   <tbody>${rows.map(u=>`<tr data-uid="${u.id}"><td>${esc(u.email)}</td><td><select data-role ${canEdit?'':'disabled'}>${['viewer','editor','admin'].map(r=>`<option${u.role===r?' selected':''}>${r}</option>`).join('')}</select> <span class="save"></span></td></tr>`).join('')}</tbody></table></div>
+   <p class="muted" style="margin-top:8px">Só admins podem alterar papéis. / Only admins can change roles.</p>`);
+  wireShell();
+  app.querySelectorAll('tr[data-uid]').forEach(tr=>{const uid=tr.dataset.uid, cell=tr.querySelector('.save');
+    tr.querySelector('[data-role]').onchange=async e=>{cell.innerHTML='<span class="saving">…</span>';const {error}=await sb.from('profiles').update({role:e.target.value}).eq('id',uid);cell.innerHTML=error?'<span class="conflict">!</span>':'<span class="saved">✓</span>';};});
+}
+
 async function render(){
   const {data:{session}}=await sb.auth.getSession();
   if(!session){loginView();return}
   if(!lists.people) await loadLists();
+  try{ const {data:prof}=await sb.from('profiles').select('role').eq('id',session.user.id).maybeSingle(); myRole=prof?.role||'viewer'; }catch(e){ myRole='viewer'; }
+  canEdit = myRole==='admin'||myRole==='editor';
   if(view==='components')return componentsView();
   if(view==='actions')return actionsView();
   if(view==='matrix')return matrixView();
@@ -332,6 +397,8 @@ async function render(){
   if(view==='person')return personView();
   if(view==='weekly')return weeklyView();
   if(view==='governance')return governanceView();
+  if(view==='help')return helpView();
+  if(view==='admin' && myRole==='admin')return adminView();
   return dashboard();
 }
 sb.auth.onAuthStateChange(()=>render());

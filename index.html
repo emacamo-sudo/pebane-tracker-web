@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Pebane Phase 1 Action Tracker</title>
+<style>
+  :root{--orange:#F05423;--ink:#111;--line:#e5e5e5;--bg:#faf9f7;--muted:#6b7280}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink)}
+  a{color:var(--orange)}
+  .wrap{max-width:1300px;margin:0 auto;padding:16px 20px}
+  nav{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:20px;flex-wrap:wrap;gap:10px}
+  nav .brand{display:flex;align-items:center;gap:10px;font-weight:700}
+  nav .logo{background:var(--orange);color:#fff;width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-weight:800}
+  nav .links{display:flex;gap:14px;font-size:14px}
+  nav .links a{color:var(--muted);text-decoration:none;cursor:pointer}
+  nav .links a.active,nav .links a:hover{color:var(--orange)}
+  .right{display:flex;align-items:center;gap:8px}
+  button{font:inherit;cursor:pointer}
+  .btn{background:var(--orange);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-weight:600}
+  .btn.ghost{background:#fff;color:var(--ink);border:1px solid var(--line)}
+  .chip{border:1px solid var(--line);border-radius:999px;background:#fff;padding:4px 8px;font-size:12px}
+  .chip b{background:var(--orange);color:#fff;border-radius:999px;padding:3px 8px;margin:-4px 2px -4px -6px;display:inline-block}
+  .tiles{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin:18px 0 26px}
+  @media(max-width:760px){.tiles{grid-template-columns:repeat(2,1fr)}}
+  .tile{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px}
+  .tile .n{font-size:28px;font-weight:800}
+  .tile .l{font-size:12px;color:var(--muted);margin-top:4px}
+  .badge{border-radius:8px;padding:6px 12px;font-size:13px;font-weight:600}
+  .ok{background:#dcfce7;color:#166534}.bad{background:#fee2e2;color:#991b1b}
+  table{width:100%;border-collapse:collapse;background:#fff;font-size:13px}
+  .card{border:1px solid var(--line);border-radius:12px;overflow:auto}
+  th{background:#f3f4f6;text-align:left;padding:8px;color:#4b5563;font-size:12px;white-space:nowrap}
+  td{border-top:1px solid #f1f1f1;padding:6px 8px;vertical-align:top}
+  select,input,textarea{font:inherit;border:1px solid transparent;border-radius:6px;padding:4px 6px;background:#fff}
+  td select:hover,td input:hover,td textarea:hover{border-color:var(--line)}
+  td select:focus,td input:focus,td textarea:focus{border-color:var(--orange);outline:none}
+  .tag{border-radius:6px;padding:2px 8px;font-size:11px;white-space:nowrap}
+  .Red{background:#fee2e2;color:#991b1b}.Amber{background:#fef3c7;color:#92400e}.Green{background:#dcfce7;color:#166534}
+  .OnHold{background:#e5e7eb;color:#374151}.Complete{background:#dbeafe;color:#1e40af}
+  .Overdue{background:#fee2e2;color:#991b1b}.Due{background:#fef3c7;color:#92400e}.On{background:#f3f4f6;color:#6b7280}
+  .filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+  .filters select,.filters input{border:1px solid var(--line)}
+  .save{font-size:11px}.saving{color:#6b7280}.saved{color:#16a34a}.conflict{color:#dc2626}
+  .center{min-height:80vh;display:flex;align-items:center;justify-content:center}
+  .login{width:380px;max-width:92vw}
+  .login .box{background:#fff;border:1px solid var(--line);border-radius:12px;padding:20px;margin-top:14px}
+  .login input{width:100%;border:1px solid var(--line);margin:6px 0 10px}
+  .muted{color:var(--muted);font-size:13px}
+  h1{font-size:20px;margin:0 0 12px}
+  .hide{display:none}
+  .trashrow td{color:#9ca3af}
+</style>
+</head>
+<body>
+<div id="app" class="wrap"><div class="center muted">A carregar…</div></div>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+const SUPABASE_URL = 'https://kciboyetjltpjbjmryml.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtjaWJveWV0amx0cGpiam1yeW1sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ4NDYyNTMsImV4cCI6MjExMDQyMjI1M30.Tx7dhdgrOgADGUgLP7qAj6mJoQVdxa1BCrVC74iMcpc';
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+const T = {
+  pt:{title:'Pebane Fase 1 — Registo de Acções',dashboard:'Painel',components:'Componentes',actions:'Acções',
+    signin:'Entrar',email:'Endereço de email',send:'Enviar link de acesso',check:'Verifique o seu email — enviámos um link de acesso.',
+    signout:'Sair',total:'Total de acções',open:'Em aberto',overdue:'Em atraso',due:'A vencer (7 dias)',red:'Componentes a vermelho',
+    verify:'Verificação §7',vok:'Contagens validadas',vbad:'Divergência',comp:'Componente',avg:'% Médio',rag:'RAG',
+    all:'Todos',resp:'Responsável',status:'Estado',gate:'Gate',flag:'Sinal',search:'Pesquisar…',add:'Nova acção',
+    deliverable:'Acção / Entregável',prio:'Prioridade',duecol:'Prazo',pct:'% Concl.',owner:'Dono',target:'Conclusão alvo',
+    milestone:'Próximo marco',trash:'Lixo',restore:'Restaurar',del:'Apagar',conflict:'Alterado noutra sessão — recarregue',lang:'EN'},
+  en:{title:'Pebane Phase 1 Action Tracker',dashboard:'Dashboard',components:'Components',actions:'Actions',
+    signin:'Sign in',email:'Email address',send:'Send magic link',check:'Check your email — we sent a sign-in link.',
+    signout:'Sign out',total:'Total actions',open:'Open',overdue:'Overdue',due:'Due (7 days)',red:'Red components',
+    verify:'§7 verification',vok:'Counts validated',vbad:'Mismatch',comp:'Component',avg:'Avg %',rag:'RAG',
+    all:'All',resp:'Responsible',status:'Status',gate:'Gate',flag:'Flag',search:'Search…',add:'New action',
+    deliverable:'Action / Deliverable',prio:'Priority',duecol:'Due',pct:'% Compl.',owner:'Owner',target:'Target completion',
+    milestone:'Next milestone',trash:'Trash',restore:'Restore',del:'Delete',conflict:'Changed in another session — reload',lang:'PT'}
+};
+let lang = localStorage.getItem('lang')==='en'?'en':'pt';
+const t = k => T[lang][k];
+const app = document.getElementById('app');
+const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const fmt = d => { if(!d) return ''; const [y,m,dd]=d.split('-'); return `${+dd} ${MON[+m-1]} ${y}`; };
+const esc = s => (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const flagClass = f => f==='Overdue'?'Overdue':f==='Due 7 days'?'Due':'On';
+const ragClass = r => ({Red:'Red',Amber:'Amber',Green:'Green','On Hold':'OnHold',Complete:'Complete'}[r]||'On');
+let lists={}, people=[], view='dashboard';
+
+async function loadLists(){
+  const {data}=await sb.from('lists').select('category,value,position').order('position');
+  lists={}; (data||[]).forEach(r=>{(lists[r.category]=lists[r.category]||[]).push(r.value)});
+}
+function opt(cat,val){return (lists[cat]||[]).map(v=>`<option${v===val?' selected':''}>${esc(v)}</option>`).join('')}
+
+function shell(inner){
+  return `<nav>
+    <div class="brand"><span class="logo">M</span><div><div style="color:var(--orange);font-size:11px;letter-spacing:.08em">MOZSA</div><div style="font-size:14px">${t('title')}</div></div></div>
+    <div class="right">
+      <div class="links">
+        <a data-nav="dashboard" class="${view==='dashboard'?'active':''}">${t('dashboard')}</a>
+        <a data-nav="components" class="${view==='components'?'active':''}">${t('components')}</a>
+        <a data-nav="actions" class="${view==='actions'?'active':''}">${t('actions')}</a>
+      </div>
+      <button class="chip" id="lang">${t('lang')}</button>
+      <button class="btn ghost" id="signout">${t('signout')}</button>
+    </div></nav>${inner}`;
+}
+function wireShell(){
+  document.querySelectorAll('[data-nav]').forEach(a=>a.onclick=()=>{view=a.dataset.nav;render()});
+  document.getElementById('lang').onclick=()=>{lang=lang==='pt'?'en':'pt';localStorage.setItem('lang',lang);render()};
+  document.getElementById('signout').onclick=async()=>{await sb.auth.signOut();render()};
+}
+
+async function dashboard(){
+  const [{data:d},{data:cm}]=await Promise.all([
+    sb.from('v_dashboard').select('*').maybeSingle(),
+    sb.from('v_component_metrics').select('*').order('component_id')
+  ]);
+  const dd=d||{total:0,open:0,overdue:0,due_next_7_days:0,red_components:0};
+  const comps=cm||[];
+  const ok = dd.total===78 && comps.length===8;
+  const tiles=[['total',dd.total],['open',dd.open],['overdue',dd.overdue],['due',dd.due_next_7_days],['red',dd.red_components]];
+  app.innerHTML=shell(`
+    <div style="display:flex;justify-content:space-between;align-items:center"><h1>${t('dashboard')}</h1>
+      <span class="badge ${ok?'ok':'bad'}">${t('verify')}: ${ok?t('vok'):t('vbad')}</span></div>
+    <div class="tiles">${tiles.map(([k,v])=>`<div class="tile"><div class="n">${v??0}</div><div class="l">${t(k)}</div></div>`).join('')}</div>
+    <div class="card"><table><thead><tr><th>ID</th><th>${t('comp')}</th><th>Total</th><th>${t('open')}</th><th>${t('overdue')}</th><th>${t('avg')}</th><th>${t('rag')}</th></tr></thead>
+    <tbody>${comps.map(c=>`<tr><td><b>${c.component_id}</b></td><td>${esc(c.name)}</td><td>${c.total_actions}</td><td>${c.open_actions}</td><td>${c.overdue}</td><td>${c.avg_pct_complete??0}%</td><td><span class="tag ${ragClass(c.rag)}">${c.rag}</span></td></tr>`).join('')}</tbody></table></div>`);
+  wireShell();
+}
+
+async function componentsView(){
+  const {data}=await sb.from('components').select('*').order('component_id');
+  const rows=data||[];
+  const row=c=>`<tr data-id="${c.component_id}"><td><b>${c.component_id}</b></td><td>${esc(c.name)}</td>
+    <td><select data-f="owner"><option></option>${opt('people',c.owner)}</select></td>
+    <td><select data-f="priority"><option></option>${opt('priority',c.priority)}</select></td>
+    <td><select data-f="status"><option></option>${opt('project_status',c.status)}</select></td>
+    <td><input type="date" data-f="target_completion" value="${c.target_completion||''}"></td>
+    <td><input data-f="next_milestone" value="${esc(c.next_milestone)}" style="width:220px"></td>
+    <td class="save"></td></tr>`;
+  app.innerHTML=shell(`<h1>${t('components')}</h1><div class="card"><table><thead><tr><th>ID</th><th>${t('comp')}</th><th>${t('owner')}</th><th>${t('prio')}</th><th>${t('status')}</th><th>${t('target')}</th><th>${t('milestone')}</th><th></th></tr></thead><tbody>${rows.map(row).join('')}</tbody></table></div>`);
+  wireShell();
+  app.querySelectorAll('tbody tr').forEach(tr=>{
+    const id=tr.dataset.id, cur=rows.find(r=>r.component_id===id);
+    tr.querySelectorAll('[data-f]').forEach(el=>el.addEventListener('change',()=>saveRow('components','component_id',id,cur,el.dataset.f,el.value,tr)));
+  });
+}
+
+async function actionsView(){
+  const [{data:live},{data:del}]=await Promise.all([
+    sb.from('v_actions').select('*').order('action_id'),
+    sb.from('actions').select('action_id,action_deliverable,component_id').not('deleted_at','is',null).order('action_id')
+  ]);
+  let rows=live||[]; const trash=del||[];
+  const peopleOpts=lists.people||[], gateOpts=lists.gate||[], statusOpts=lists.action_status||[];
+  const compIds=[...new Set(rows.map(r=>r.component_id))].sort();
+  const F={comp:'',gate:'',resp:'',status:'',flag:'',q:''};
+  const render2=()=>{
+    const f=rows.filter(r=>(!F.comp||r.component_id===F.comp)&&(!F.gate||r.gate===F.gate)&&(!F.resp||r.responsible===F.resp)&&(!F.status||r.status===F.status)&&(!F.flag||r.flag===F.flag)&&(!F.q||((r.action_deliverable||'')+' '+r.action_id).toLowerCase().includes(F.q.toLowerCase())));
+    const body=f.map(r=>`<tr data-id="${r.action_id}">
+      <td><b>${r.action_id}</b></td>
+      <td><textarea data-f="action_deliverable" rows="1" style="width:260px">${esc(r.action_deliverable)}</textarea></td>
+      <td><select data-f="gate"><option></option>${opt('gate',r.gate)}</select></td>
+      <td><select data-f="responsible"><option></option>${opt('people',r.responsible)}</select></td>
+      <td><select data-f="status"><option></option>${opt('action_status',r.status)}</select></td>
+      <td><select data-f="priority"><option></option>${opt('priority',r.priority)}</select></td>
+      <td><input type="date" data-f="due_date" value="${r.due_date||''}"></td>
+      <td><input type="number" min="0" max="100" data-f="pct_complete" value="${r.pct_complete??0}" style="width:60px"></td>
+      <td>${r.flag?`<span class="tag ${flagClass(r.flag)}">${r.flag}</span>`:''}</td>
+      <td class="save"></td><td><button class="chip" data-del="${r.action_id}">🗑</button></td></tr>`).join('');
+    document.getElementById('tbody').innerHTML=body;
+    f.forEach(r=>{
+      const tr=document.querySelector(`tr[data-id="${r.action_id}"]`);
+      tr.querySelectorAll('[data-f]').forEach(el=>{
+        const ev=el.tagName==='TEXTAREA'||el.type==='number'?'blur':'change';
+        el.addEventListener(ev,()=>saveRow('actions','action_id',r.action_id,r,el.dataset.f,el.type==='number'?(+el.value||0):el.value,tr));
+      });
+      tr.querySelector('[data-del]').onclick=async()=>{await sb.from('actions').update({deleted_at:new Date().toISOString()}).eq('action_id',r.action_id);actionsView()};
+    });
+  };
+  app.innerHTML=shell(`<div style="display:flex;justify-content:space-between;align-items:center"><h1>${t('actions')}</h1>
+    <button class="btn" id="addbtn">+ ${t('add')}</button></div>
+    <div class="filters">
+      <input id="q" placeholder="${t('search')}">
+      <select id="fcomp"><option value="">${t('comp')}: ${t('all')}</option>${compIds.map(c=>`<option>${c}</option>`).join('')}</select>
+      <select id="fgate"><option value="">${t('gate')}: ${t('all')}</option>${gateOpts.map(g=>`<option>${esc(g)}</option>`).join('')}</select>
+      <select id="fresp"><option value="">${t('resp')}: ${t('all')}</option>${peopleOpts.map(p=>`<option>${esc(p)}</option>`).join('')}</select>
+      <select id="fstatus"><option value="">${t('status')}: ${t('all')}</option>${statusOpts.map(s=>`<option>${esc(s)}</option>`).join('')}</select>
+      <select id="fflag"><option value="">${t('flag')}: ${t('all')}</option>${['Overdue','Due 7 days','On track','Complete'].map(x=>`<option>${x}</option>`).join('')}</select>
+      <span class="chip">${t('trash')}: ${trash.length}</span>
+    </div>
+    <div class="card"><table><thead><tr><th>ID</th><th>${t('deliverable')}</th><th>${t('gate')}</th><th>${t('resp')}</th><th>${t('status')}</th><th>${t('prio')}</th><th>${t('duecol')}</th><th>${t('pct')}</th><th>${t('flag')}</th><th></th><th></th></tr></thead><tbody id="tbody"></tbody></table></div>
+    ${trash.length?`<div class="card" style="margin-top:14px"><table><tbody>${trash.map(r=>`<tr class="trashrow"><td><b>${r.action_id}</b></td><td>${esc(r.action_deliverable)}</td><td><button class="chip" data-restore="${r.action_id}">↩ ${t('restore')}</button></td></tr>`).join('')}</tbody></table></div>`:''}`);
+  wireShell();
+  render2();
+  document.getElementById('q').oninput=e=>{F.q=e.target.value;render2()};
+  document.getElementById('fcomp').onchange=e=>{F.comp=e.target.value;render2()};
+  document.getElementById('fgate').onchange=e=>{F.gate=e.target.value;render2()};
+  document.getElementById('fresp').onchange=e=>{F.resp=e.target.value;render2()};
+  document.getElementById('fstatus').onchange=e=>{F.status=e.target.value;render2()};
+  document.getElementById('fflag').onchange=e=>{F.flag=e.target.value;render2()};
+  document.querySelectorAll('[data-restore]').forEach(b=>b.onclick=async()=>{await sb.from('actions').update({deleted_at:null}).eq('action_id',b.dataset.restore);actionsView()});
+  document.getElementById('addbtn').onclick=async()=>{
+    const {data:last}=await sb.from('actions').select('action_id').order('action_id',{ascending:false}).limit(1).maybeSingle();
+    const n=last?parseInt(last.action_id.replace(/\D/g,''))+1:1, id='A'+String(n).padStart(3,'0');
+    const comp=F.comp||compIds[0];
+    await sb.from('actions').insert({action_id:id,component_id:comp,status:'Not Started',pct_complete:0,priority:'Medium',date_raised:new Date().toISOString().slice(0,10),action_deliverable:''});
+    actionsView();
+  };
+}
+
+async function saveRow(table,key,id,cur,field,value,tr){
+  const cell=tr.querySelector('.save'); if(cell){cell.innerHTML=`<span class="saving">…</span>`}
+  const patch={}; patch[field]=value===''?null:value;
+  const {data,error}=await sb.from(table).update(patch).eq(key,id).eq('version',cur.version).select('version').maybeSingle();
+  if(error){cell.innerHTML=`<span class="conflict">!</span>`;return}
+  if(!data){cell.innerHTML=`<span class="conflict" title="${t('conflict')}">⚠︎</span>`;return}
+  cur.version=data.version; cur[field]=patch[field];
+  if(cell){cell.innerHTML=`<span class="saved">✓</span>`;setTimeout(()=>cell.innerHTML='',1400)}
+}
+
+function loginView(){
+  app.innerHTML=`<div class="center"><div class="login">
+    <nav style="border:none;padding:0"><div class="brand"><span class="logo">M</span><div><div style="color:var(--orange);font-size:11px;letter-spacing:.08em">MOZSA</div><div style="font-size:14px">${t('title')}</div></div></div><button class="chip" id="lang">${t('lang')}</button></nav>
+    <div class="box"><h1>${t('signin')}</h1><div id="msg"></div>
+    <label class="muted">${t('email')}</label><input id="email" type="email" placeholder="${t('email')}">
+    <button class="btn" id="send" style="width:100%">${t('send')}</button></div></div></div>`;
+  document.getElementById('lang').onclick=()=>{lang=lang==='pt'?'en':'pt';localStorage.setItem('lang',lang);loginView()};
+  document.getElementById('send').onclick=async()=>{
+    const email=document.getElementById('email').value.trim(); if(!email)return;
+    const {error}=await sb.auth.signInWithOtp({email,options:{emailRedirectTo:location.origin}});
+    document.getElementById('msg').innerHTML=error?`<p class="conflict">${esc(error.message)}</p>`:`<p style="color:#166534">${t('check')}</p>`;
+  };
+}
+
+async function render(){
+  const {data:{session}}=await sb.auth.getSession();
+  if(!session){loginView();return}
+  if(!lists.people) await loadLists();
+  if(view==='components')return componentsView();
+  if(view==='actions')return actionsView();
+  return dashboard();
+}
+sb.auth.onAuthStateChange(()=>render());
+render();
+</script>
+</body>
+</html>

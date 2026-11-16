@@ -63,8 +63,9 @@
 <body>
 <div id="app" class="wrap"><div class="center muted">A carregar…</div></div>
 
+<script src="./supabase.js"></script>
 <script type="module">
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+const { createClient } = window.supabase;
 
 const SUPABASE_URL = 'https://kciboyetjltpjbjmryml.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtjaWJveWV0amx0cGpiam1yeW1sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ4NDYyNTMsImV4cCI6MjExMDQyMjI1M30.Tx7dhdgrOgADGUgLP7qAj6mJoQVdxa1BCrVC74iMcpc';

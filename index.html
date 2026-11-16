@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Pebane Phase 1 Action Tracker</title>
 <style>
-  :root{--orange:#F05423;--ink:#111;--line:#e5e5e5;--bg:#faf9f7;--muted:#6b7280}
+  :root{--orange:#F05423;--navy:#10314B;--ink:#111;--line:#e5e5e5;--bg:#faf9f7;--muted:#6b7280}
   *{box-sizing:border-box}
   body{margin:0;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink)}
   a{color:var(--orange)}
@@ -58,6 +58,14 @@
   .gov .b{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px}
   .lane{display:grid;grid-template-columns:1fr auto;gap:8px;font-size:13px;padding:5px 0;border-top:1px solid #f1f1f1}
   .lane:first-child{border-top:none}.sec{margin-top:4px}
+  .topbar{height:4px;border-radius:4px;background:linear-gradient(90deg,var(--orange) 0 50%,var(--navy) 50% 100%);margin-bottom:14px}
+  .logo.mz{background:var(--orange)}.logo.ya{background:var(--navy)}
+  .brand .x{color:var(--muted);font-weight:700;font-size:16px;margin:0 1px}
+  .brand .eyebrow{font-size:11px;letter-spacing:.09em;color:var(--muted);font-weight:700}
+  .brand .eyebrow b.mz{color:var(--orange)}.brand .eyebrow b.ya{color:var(--navy)}
+  .brand .tt{font-size:14px;font-weight:700}
+  .foot{margin-top:28px;padding-top:12px;border-top:1px solid var(--line);font-size:11px;color:var(--muted);text-align:center;line-height:1.6}
+  .foot b.mz{color:var(--orange)}.foot b.ya{color:var(--navy)}
 </style>
 </head>
 <body>
@@ -112,8 +120,8 @@ async function loadLists(){
 function opt(cat,val){return (lists[cat]||[]).map(v=>`<option${v===val?' selected':''}>${esc(v)}</option>`).join('')}
 
 function shell(inner){
-  return `<nav>
-    <div class="brand"><span class="logo">M</span><div><div style="color:var(--orange);font-size:11px;letter-spacing:.08em">MOZSA</div><div style="font-size:14px">${t('title')}</div></div></div>
+  return `<div class="topbar"></div><nav>
+    <div class="brand"><span class="logo mz">M</span><span class="x">×</span><span class="logo ya">Y</span><div><div class="eyebrow"><b class="mz">MOZSA</b> · <b class="ya">YASA</b></div><div class="tt">${t('title')}</div></div></div>
     <div class="right">
       <div class="links">
         <a data-nav="dashboard" class="${view==='dashboard'?'active':''}">${t('dashboard')}</a>
@@ -127,7 +135,7 @@ function shell(inner){
       </div>
       <button class="chip" id="lang">${t('lang')}</button>
       <button class="btn ghost" id="signout">${t('signout')}</button>
-    </div></nav>${inner}`;
+    </div></nav>${inner}<div class="foot"><b class="mz">MOZSA, Limitada</b> (50%) · <b class="ya">YASA Mozambique, Lda</b> (50%)<br>Pebane Integrated Port City, Energy &amp; Industrial Corridor</div>`;
 }
 function wireShell(){
   document.querySelectorAll('[data-nav]').forEach(a=>a.onclick=()=>{view=a.dataset.nav;render()});
@@ -246,10 +254,12 @@ async function saveRow(table,key,id,cur,field,value,tr){
 
 function loginView(){
   app.innerHTML=`<div class="center"><div class="login">
-    <nav style="border:none;padding:0"><div class="brand"><span class="logo">M</span><div><div style="color:var(--orange);font-size:11px;letter-spacing:.08em">MOZSA</div><div style="font-size:14px">${t('title')}</div></div></div><button class="chip" id="lang">${t('lang')}</button></nav>
+    <div class="topbar"></div>
+    <nav style="border:none;padding:0"><div class="brand"><span class="logo mz">M</span><span class="x">×</span><span class="logo ya">Y</span><div><div class="eyebrow"><b class="mz">MOZSA</b> · <b class="ya">YASA</b></div><div class="tt">${t('title')}</div></div></div><button class="chip" id="lang">${t('lang')}</button></nav>
     <div class="box"><h1>${t('signin')}</h1><div id="msg"></div>
     <label class="muted">${t('email')}</label><input id="email" type="email" placeholder="${t('email')}">
-    <button class="btn" id="send" style="width:100%">${t('send')}</button></div></div></div>`;
+    <button class="btn" id="send" style="width:100%">${t('send')}</button></div>
+    <div class="foot"><b class="mz">MOZSA, Limitada</b> (50%) · <b class="ya">YASA Mozambique, Lda</b> (50%)</div></div></div>`;
   document.getElementById('lang').onclick=()=>{lang=lang==='pt'?'en':'pt';localStorage.setItem('lang',lang);loginView()};
   document.getElementById('send').onclick=async()=>{
     const email=document.getElementById('email').value.trim(); if(!email)return;

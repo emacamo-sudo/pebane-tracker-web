@@ -232,7 +232,7 @@ function loginView(){
   document.getElementById('lang').onclick=()=>{lang=lang==='pt'?'en':'pt';localStorage.setItem('lang',lang);loginView()};
   document.getElementById('send').onclick=async()=>{
     const email=document.getElementById('email').value.trim(); if(!email)return;
-    const {error}=await sb.auth.signInWithOtp({email,options:{emailRedirectTo:location.origin}});
+    const {error}=await sb.auth.signInWithOtp({email,options:{emailRedirectTo:location.origin+location.pathname}});
     document.getElementById('msg').innerHTML=error?`<p class="conflict">${esc(error.message)}</p>`:`<p style="color:#166534">${t('check')}</p>`;
   };
 }

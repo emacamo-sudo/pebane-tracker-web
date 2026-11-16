@@ -51,6 +51,13 @@
   h1{font-size:20px;margin:0 0 12px}
   .hide{display:none}
   .trashrow td{color:#9ca3af}
+  .matrix td,.matrix th{text-align:center;min-width:48px}
+  .matrix td.rowh{text-align:left;white-space:nowrap;font-weight:600}
+  .cell0{color:#cbd5e1}.cellN{font-weight:700}.cellO{color:#991b1b;font-weight:700}
+  .gov h3{font-size:14px;margin:18px 0 8px;color:var(--orange)}
+  .gov .b{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px}
+  .lane{display:grid;grid-template-columns:1fr auto;gap:8px;font-size:13px;padding:5px 0;border-top:1px solid #f1f1f1}
+  .lane:first-child{border-top:none}.sec{margin-top:4px}
 </style>
 </head>
 <body>
@@ -70,14 +77,22 @@ const T = {
     verify:'Verificação §7',vok:'Contagens validadas',vbad:'Divergência',comp:'Componente',avg:'% Médio',rag:'RAG',
     all:'Todos',resp:'Responsável',status:'Estado',gate:'Gate',flag:'Sinal',search:'Pesquisar…',add:'Nova acção',
     deliverable:'Acção / Entregável',prio:'Prioridade',duecol:'Prazo',pct:'% Concl.',owner:'Dono',target:'Conclusão alvo',
-    milestone:'Próximo marco',trash:'Lixo',restore:'Restaurar',del:'Apagar',conflict:'Alterado noutra sessão — recarregue',lang:'EN'},
+    milestone:'Próximo marco',trash:'Lixo',restore:'Restaurar',del:'Apagar',conflict:'Alterado noutra sessão — recarregue',
+    navMatrix:'Matriz',navMeeting:'Reunião',navPerson:'Por responsável',navWeekly:'Semanal',navGov:'Governança',
+    mtxTitle:'Matriz (Componente × Gate)',meetTitle:'Reunião de projecto',persTitle:'Seguimento por responsável',wkTitle:'Relatório semanal',
+    govTitle:'Governança e Responsabilidades',govParties:'Partes',govBodies:'Órgãos',govWs:'Workstreams (WS1–WS6)',govExt:'Interfaces externas',govFuture:'SPVs (futuro)',
+    lead:'Lead',colead:'Co-lead',joint:'Conjuntas',dueWeek:'A vencer / em atraso',recent:'Actualizados (7 dias)',openItems:'em aberto',none:'—',yes:'Sim',no:'Não',lang:'EN'},
   en:{title:'Pebane Phase 1 Action Tracker',dashboard:'Dashboard',components:'Components',actions:'Actions',
     signin:'Sign in',email:'Email address',send:'Send magic link',check:'Check your email — we sent a sign-in link.',
     signout:'Sign out',total:'Total actions',open:'Open',overdue:'Overdue',due:'Due (7 days)',red:'Red components',
     verify:'§7 verification',vok:'Counts validated',vbad:'Mismatch',comp:'Component',avg:'Avg %',rag:'RAG',
     all:'All',resp:'Responsible',status:'Status',gate:'Gate',flag:'Flag',search:'Search…',add:'New action',
     deliverable:'Action / Deliverable',prio:'Priority',duecol:'Due',pct:'% Compl.',owner:'Owner',target:'Target completion',
-    milestone:'Next milestone',trash:'Trash',restore:'Restore',del:'Delete',conflict:'Changed in another session — reload',lang:'PT'}
+    milestone:'Next milestone',trash:'Trash',restore:'Restore',del:'Delete',conflict:'Changed in another session — reload',
+    navMatrix:'Matrix',navMeeting:'Meeting',navPerson:'By person',navWeekly:'Weekly',navGov:'Governance',
+    mtxTitle:'Matrix (Component × Gate)',meetTitle:'Project meeting',persTitle:'Person follow-up',wkTitle:'Weekly report',
+    govTitle:'Governance & Responsibilities',govParties:'Parties',govBodies:'Bodies',govWs:'Workstreams (WS1–WS6)',govExt:'External interfaces',govFuture:'SPVs (future)',
+    lead:'Lead',colead:'Co-lead',joint:'Joint',dueWeek:'Due / overdue',recent:'Updated (7 days)',openItems:'open',none:'—',yes:'Yes',no:'No',lang:'PT'}
 };
 let lang = localStorage.getItem('lang')==='en'?'en':'pt';
 const t = k => T[lang][k];
@@ -103,6 +118,11 @@ function shell(inner){
         <a data-nav="dashboard" class="${view==='dashboard'?'active':''}">${t('dashboard')}</a>
         <a data-nav="components" class="${view==='components'?'active':''}">${t('components')}</a>
         <a data-nav="actions" class="${view==='actions'?'active':''}">${t('actions')}</a>
+        <a data-nav="matrix" class="${view==='matrix'?'active':''}">${t('navMatrix')}</a>
+        <a data-nav="meeting" class="${view==='meeting'?'active':''}">${t('navMeeting')}</a>
+        <a data-nav="person" class="${view==='person'?'active':''}">${t('navPerson')}</a>
+        <a data-nav="weekly" class="${view==='weekly'?'active':''}">${t('navWeekly')}</a>
+        <a data-nav="governance" class="${view==='governance'?'active':''}">${t('navGov')}</a>
       </div>
       <button class="chip" id="lang">${t('lang')}</button>
       <button class="btn ghost" id="signout">${t('signout')}</button>
@@ -237,12 +257,70 @@ function loginView(){
   };
 }
 
+async function matrixView(){
+  const {data}=await sb.from('v_actions').select('component_id,gate,flag');
+  const rows=data||[]; const gates=lists.gate||[];
+  const comps=[...new Set(rows.map(r=>r.component_id))].sort();
+  const cell=(c,g)=>{const a=rows.filter(r=>r.component_id===c&&r.gate===g);const o=a.filter(r=>r.flag==='Overdue').length;return a.length?`<span class="${o?'cellO':'cellN'}">${a.length}${o?` (${o}!)`:''}</span>`:'<span class="cell0">·</span>'};
+  app.innerHTML=shell(`<h1>${t('mtxTitle')}</h1>
+   <div class="card"><table class="matrix"><thead><tr><th>${t('comp')}</th>${gates.map(g=>`<th title="${esc(g)}">${g.split(' ')[0]}</th>`).join('')}<th>Σ</th></tr></thead>
+   <tbody>${comps.map(c=>`<tr><td class="rowh">${c}</td>${gates.map(g=>`<td>${cell(c,g)}</td>`).join('')}<td class="cellN">${rows.filter(r=>r.component_id===c).length}</td></tr>`).join('')}
+   <tr><td class="rowh">Σ</td>${gates.map(g=>`<td class="cellN">${rows.filter(r=>r.gate===g).length}</td>`).join('')}<td class="cellN">${rows.length}</td></tr></tbody></table></div>
+   <p class="muted" style="margin-top:8px">${t('overdue')}: (n!) · Gate G1–G6</p>`);
+  wireShell();
+}
+const _rowsTable=a=>`<table><tbody>${a.map(r=>`<tr><td>${r.action_id}</td><td>${r.component_id}</td><td>${esc(r.action_deliverable)}</td><td>${esc(r.responsible)||''}</td><td>${esc(r.status)||''}</td><td>${r.due_date?fmt(r.due_date):''}</td><td>${r.flag?`<span class="tag ${flagClass(r.flag)}">${r.flag}</span>`:''}</td></tr>`).join('')}</tbody></table>`;
+const _ord={Overdue:0,'Due 7 days':1,'On track':2,Complete:3};
+async function meetingView(){
+  const [{data:av},{data:cmp}]=await Promise.all([sb.from('v_actions').select('*').order('component_id'),sb.from('components').select('component_id,name,next_milestone,milestone_due').order('component_id')]);
+  const rows=av||[],comps=cmp||[];
+  const secs=comps.map(c=>{const a=(rows.filter(r=>r.component_id===c.component_id&&r.status!=='Complete')).sort((x,y)=>_ord[x.flag]-_ord[y.flag]);if(!a.length)return '';
+    return `<div class="b"><div style="font-weight:700">${c.component_id} — ${esc(c.name)}</div><div class="muted sec">${t('milestone')}: ${esc(c.next_milestone)||'—'}${c.milestone_due?' · '+fmt(c.milestone_due):''}</div>${_rowsTable(a)}</div>`;}).join('');
+  app.innerHTML=shell(`<h1>${t('meetTitle')}</h1><div class="gov">${secs||t('none')}</div>`); wireShell();
+}
+async function personView(){
+  const {data}=await sb.from('v_actions').select('*');
+  const rows=(data||[]).filter(r=>r.status!=='Complete'); const byP={};
+  rows.forEach(r=>{const k=r.responsible||'—';(byP[k]=byP[k]||[]).push(r)});
+  const secs=Object.keys(byP).sort().map(k=>{const a=byP[k].sort((x,y)=>_ord[x.flag]-_ord[y.flag]);const ov=a.filter(r=>r.flag==='Overdue').length;
+    return `<div class="b"><div style="font-weight:700">${esc(k)} <span class="muted">· ${a.length} ${t('openItems')}${ov?` · ${ov} ${t('overdue')}`:''}</span></div>${_rowsTable(a)}</div>`;}).join('');
+  app.innerHTML=shell(`<h1>${t('persTitle')}</h1><div class="gov">${secs||t('none')}</div>`); wireShell();
+}
+async function weeklyView(){
+  const [{data:d},{data:av}]=await Promise.all([sb.from('v_dashboard').select('*').maybeSingle(),sb.from('v_actions').select('*')]);
+  const dd=d||{},rows=av||[];
+  const dueWeek=rows.filter(r=>r.flag==='Overdue'||r.flag==='Due 7 days').sort((a,b)=>(a.due_date||'').localeCompare(b.due_date||''));
+  const wk=new Date(Date.now()-7*864e5).toISOString().slice(0,10);
+  const recent=rows.filter(r=>r.last_updated&&r.last_updated>=wk).sort((a,b)=>(b.last_updated||'').localeCompare(a.last_updated||''));
+  const tiles=[['total',dd.total],['open',dd.open],['overdue',dd.overdue],['due',dd.due_next_7_days],['red',dd.red_components]];
+  app.innerHTML=shell(`<h1>${t('wkTitle')}</h1>
+   <div class="tiles">${tiles.map(([k,v])=>`<div class="tile"><div class="n">${v??0}</div><div class="l">${t(k)}</div></div>`).join('')}</div>
+   <div class="gov"><h3>${t('dueWeek')}</h3><div class="b">${dueWeek.length?_rowsTable(dueWeek):t('none')}</div>
+   <h3>${t('recent')}</h3><div class="b">${recent.length?_rowsTable(recent):t('none')}</div></div>`); wireShell();
+}
+async function governanceView(){
+  const [o,b,w,e,s]=await Promise.all([sb.from('organisations').select('*'),sb.from('bodies').select('*'),sb.from('governance_workstreams').select('*').order('ws'),sb.from('external_interfaces').select('*'),sb.from('spvs_future').select('*')]);
+  const orgs=o.data||[],bodies=b.data||[],ws=w.data||[],ext=e.data||[],spv=s.data||[];
+  app.innerHTML=shell(`<h1>${t('govTitle')}</h1><div class="gov">
+   <h3>${t('govParties')}</h3><div class="b">${orgs.map(x=>`<div class="lane"><div>${esc(x.name)}</div><div><b>${x.share_pct!=null?x.share_pct+'%':''}</b> ${esc(x.role)||''}</div></div>`).join('')||t('none')}</div>
+   <h3>${t('govBodies')}</h3>${bodies.map(x=>`<div class="b"><div style="font-weight:700">${esc(x.body)}</div><div class="muted sec">${esc(x.composition)||''}</div><div class="sec">${esc(x.cadence)||''}</div><div class="sec">${esc(x.scope)||''}</div></div>`).join('')||t('none')}
+   <h3>${t('govWs')}</h3><div class="card"><table><thead><tr><th>WS</th><th>${t('comp')}</th><th>${t('lead')}</th><th>${t('colead')}</th><th>${t('joint')}</th></tr></thead><tbody>${ws.map(x=>`<tr><td><b>${x.ws}</b></td><td>${esc(x.name)}<div class="muted">${esc(x.scope)||''}</div></td><td>${esc(x.lead)||''}</td><td>${esc(x.co_lead)||''}</td><td>${x.joint_decisions?t('yes'):t('no')}</td></tr>`).join('')}</tbody></table></div>
+   <h3>${t('govExt')}</h3>${ext.map(x=>`<div class="b"><div style="font-weight:700">${esc(x.lead)}</div><div class="sec">${esc(x.stakeholders)||''}</div>${x.note?`<div class="muted sec">${esc(x.note)}</div>`:''}</div>`).join('')||t('none')}
+   <h3>${t('govFuture')}</h3>${spv.map(x=>`<div class="b"><div style="font-weight:700">${esc(x.spv)} <span class="tag Amber">${esc(x.status)}</span></div>${x.note?`<div class="muted sec">${esc(x.note)}</div>`:''}</div>`).join('')||t('none')}
+   </div>`); wireShell();
+}
+
 async function render(){
   const {data:{session}}=await sb.auth.getSession();
   if(!session){loginView();return}
   if(!lists.people) await loadLists();
   if(view==='components')return componentsView();
   if(view==='actions')return actionsView();
+  if(view==='matrix')return matrixView();
+  if(view==='meeting')return meetingView();
+  if(view==='person')return personView();
+  if(view==='weekly')return weeklyView();
+  if(view==='governance')return governanceView();
   return dashboard();
 }
 sb.auth.onAuthStateChange(()=>render());
